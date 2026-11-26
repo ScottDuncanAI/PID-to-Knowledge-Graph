@@ -64,7 +64,9 @@ Every node has `label`, a short display name: the tag if present, otherwise the 
 
 ## 5. Kind vocabulary and DEXPI mapping
 
-`dexpi_class` gives the closest [DEXPI](https://dexpi.org) class, to help users align the graph with DEXPI tooling. It is informative, not a certified DEXPI export.
+`dexpi_class` gives the closest [DEXPI](https://dexpi.org) class, to help users align the graph with DEXPI tooling. It is informative, and its values are unchanged from earlier versions.
+
+Every build also writes `graph.dexpi.xml`. The exporter does not read `dexpi_class`. It picks a concrete DEXPI 2.0.1 class from each node's `kind` (`EQUIPMENT_DEXPI` and `COMPONENT_DEXPI` in `scripts/pidkg/ontology.py`), so a few names differ from `dexpi_class`. For example, `column` is exported as `ProcessColumn`. Kinds with no fitting DEXPI class are exported as the extension classes `UnclassifiedEquipment` and `UnclassifiedPipingComponent`, which the DEXPI file declares itself. `PipeSegment` nodes become DEXPI `Pipe` connections inside one `PipingNetworkSegment` per drawn line. `dexpi_export_report.md` lists what else changed shape or could not be represented. The export is validated, not certified.
 
 **Equipment kinds:** tank, vessel, pressure_vessel, pump, centrifugal_pump, positive_displacement_pump, metering_pump, slurry_pump, sump_pump, compressor, blower, fan, heat_exchanger, cooler, heater, boiler, furnace, column, reactor, agitated_tank, agitator, mixer, static_mixer, filter, filter_press, membrane_filter, strainer_unit, screen, cyclone, hydrocyclone, separator, clarifier, thickener, flotation_cell, centrifuge, dryer, mill, crusher, conveyor, feeder, hopper, bin, silo, sump, pond, box, electrowinning_cell, kiln, scrubber, ion_exchange, uv_unit, sampler, package_unit, motor, other.
 

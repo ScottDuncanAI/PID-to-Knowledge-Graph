@@ -1,6 +1,6 @@
 ---
 name: pid-to-kg
-description: Converts P&IDs (piping and instrumentation diagrams) and PFDs in PDF form, either vector or scanned, into a process knowledge graph covering equipment connectivity (upstream/downstream), instrument locations and measured variables, and control loops. Output is JSON plus a DuckDB file plus an LLM-ready Markdown summary. Use when the user wants to digitize, extract, analyze or build a knowledge graph or context layer from P&IDs, or asks what is upstream/downstream of a piece of equipment, which sensors measure what, or how a plant's control loops are structured.
+description: Converts P&IDs (piping and instrumentation diagrams) and PFDs in PDF form, either vector or scanned, into a process knowledge graph covering equipment connectivity (upstream/downstream), instrument locations and measured variables, and control loops. Output is JSON plus a DuckDB file plus an LLM-ready Markdown summary plus a validated DEXPI 2.0.1 XML file. Use when the user wants to digitize, extract, analyze or build a knowledge graph or context layer from P&IDs, or asks what is upstream/downstream of a piece of equipment, which sensors measure what, or how a plant's control loops are structured.
 ---
 
 # P&ID to knowledge graph
@@ -91,6 +91,13 @@ Write `extract/page_NN.json` and save it before starting the next sheet, so a lo
 - `graph.duckdb`
 - `summary.md`
 - `qa_report.md`
+- `graph.dexpi.xml`, the DEXPI 2.0.1 native XML export. It is written only when it passes both the official XSD and the DEXPI model check
+- `dexpi_export_report.md`, which gives the validation result and everything DEXPI could not represent
+
+The DEXPI export runs on every build; it needs no flag or extra request. The build's last line reports it:
+
+- `dexpi: valid DEXPI 2.0.1 ...` means the file is current. If it mentions mapping warnings, the file is still valid; the report lists the items affected, such as nozzles and tees added to satisfy the DEXPI model.
+- `dexpi: FAILED ...` means no `graph.dexpi.xml` exists for this build, and any older copy was removed. The other outputs are fine. Read `dexpi_export_report.md`, tell the user, and do not hand over an old DEXPI file.
 
 Work through `qa_report.md`:
 
@@ -117,6 +124,8 @@ Tell the user:
 - two or three example flow paths and loops taken from `summary.md`
 - what remains uncertain
 
+Report the DEXPI status: valid, valid with mapping warnings (name the main kinds from `dexpi_export_report.md`), or failed. Say that the DEXPI file is semantic only, with no drawing graphics, so CAD tools will not redraw it as a P&ID.
+
 Point to `qa_report.md` for the details. State plainly that the graph is machine-extracted and needs engineering review before it is used for design, operations or safety.
 
 ## Using the graph
@@ -124,6 +133,7 @@ Point to `qa_report.md` for the details. State plainly that the graph is machine
 - `summary.md` is the compact, token-efficient context for an LLM: equipment-level flow, an instrument table with locations, and a loop table.
 - `graph.json` is the canonical graph, which any tool can read.
 - `graph.duckdb` is for SQL. Its views are `equipment`, `equipment_flow`, `instruments`, `loops` and `signals`, and its table macros are `upstream(id)` and `downstream(id)`.
+- `graph.dexpi.xml` is for DEXPI-capable engineering tools.
 
 Use `kg_query.py` to answer questions; add `--json` when another tool will consume the output:
 
@@ -138,4 +148,4 @@ python scripts/kg_query.py <work>/kg sql "SELECT * FROM equipment_flow"
 
 To measure extraction quality on a sheet, hand-check it into a small gold file (format in `scripts/eval_kg.py`) and run `python scripts/eval_kg.py <work>/kg gold.json`: it reports tag, flow and loop precision/recall and instrument placement.
 
-To move a graph into other tools: `python scripts/export.py <work>/kg graphml` produces a file for yEd, Gephi or NetworkX, and `python scripts/export.py <work>/kg neo4j` produces CSVs plus a Cypher import script.
+To move a graph into other tools: `python scripts/export.py <work>/kg graphml` produces a file for yEd, Gephi or NetworkX, and `python scripts/export.py <work>/kg neo4j` produces CSVs plus a Cypher import script. For a `graph.json` built before DEXPI export existed, `python scripts/export.py <work>/kg dexpi` writes the DEXPI file and report using the same mapping and validation as the build.

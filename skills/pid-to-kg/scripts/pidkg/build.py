@@ -27,6 +27,11 @@ from .ontology import (
     ACTUATED_COMPONENT_KINDS,
     COMPONENT_DEXPI,
     EQUIPMENT_DEXPI,
+    GRAPH_COMPONENT_CLASS,
+    GRAPH_COMPONENT_FALLBACK,
+    GRAPH_EQUIPMENT_CLASS,
+    GRAPH_EQUIPMENT_FALLBACK,
+    GRAPH_PIPE_SEGMENT_CLASS,
 )
 
 TERMINAL_TYPES = {"Equipment", "Boundary"}
@@ -198,7 +203,7 @@ class GraphBuilder:
                            sheet=sheet_id, page=page, node=gid, bbox=eq.bbox)
             self._upsert(Node(
                 id=gid, type="Equipment", label=tag or eq.name or kind, tag=tag, kind=kind,
-                name=eq.name, status=eq.status, dexpi_class=EQUIPMENT_DEXPI.get(kind, "Equipment"),
+                name=eq.name, status=eq.status, dexpi_class=GRAPH_EQUIPMENT_CLASS.get(kind, GRAPH_EQUIPMENT_FALLBACK),
                 sheets=[sheet_id], confidence=eq.confidence, attributes=_clean(eq.attributes),
                 provenance=prov(eq)))
             self._register(page, eq.id, eq.tag, gid)
@@ -233,7 +238,7 @@ class GraphBuilder:
             self._upsert(Node(
                 id=gid, type="Component", label=tag or (c.name if kind == "other" and c.name else _pretty(kind)),
                 tag=tag, kind=kind,
-                name=c.name, status=c.status, dexpi_class=COMPONENT_DEXPI.get(kind, "PipingComponent"),
+                name=c.name, status=c.status, dexpi_class=GRAPH_COMPONENT_CLASS.get(kind, GRAPH_COMPONENT_FALLBACK),
                 sheets=[sheet_id], confidence=c.confidence, attributes=attrs, provenance=prov(c)))
             self._register(page, c.id, c.tag, gid)
             if tag and not scope:
@@ -371,7 +376,7 @@ class GraphBuilder:
                 self._upsert(Node(
                     id=sid, type="PipeSegment", label=f"{label} [{k}/{n}]" if n > 1 else label,
                     tag=normalize_tag(line.line_number), status=line.status, sheets=[sheet_id],
-                    confidence=line.confidence, dexpi_class="PipingNetworkSegment",
+                    confidence=line.confidence, dexpi_class=GRAPH_PIPE_SEGMENT_CLASS,
                     attributes=_clean(dict(line_id=line.id, line_number=line.line_number,
                                            size=line.size, service=line.service,
                                            segment=k, segments=n)),

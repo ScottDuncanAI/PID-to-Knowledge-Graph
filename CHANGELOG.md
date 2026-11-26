@@ -24,7 +24,10 @@ First release.
   - `graph.json`, the canonical graph;
   - `graph.duckdb`, with views and the `upstream`/`downstream` macros;
   - `summary.md`, for LLM context;
-  - `qa_report.md`.
+  - `qa_report.md`;
+  - `graph.dexpi.xml`, DEXPI 2.0.1 native XML written on every build, validated against the official XSD and the DEXPI `Core`/`Plant` model, with `dexpi_export_report.md` covering every node and edge;
+  - `export.py <kg> dexpi` re-exports an existing `graph.json` with the same code.
+- The DEXPI export is an add-on. `graph.json`, `graph.duckdb`, `summary.md`, `qa_report.md` and the GraphML and Neo4j exports are unchanged, including their `dexpi_class` values. The exporter picks concrete DEXPI 2.0.1 classes from each node's `kind`, and a failed DEXPI export never changes the build's exit status.
 - `kg_query.py` CLI, GraphML and Neo4j export, and an `eval_kg.py` scorer.
 - Handling for problems found on real drawings:
   - the same tag on two items (`duplicate_tag`);

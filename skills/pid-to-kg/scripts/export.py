@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
-"""Export a knowledge graph to GraphML or a Neo4j import bundle.
+"""Export a knowledge graph to GraphML, a Neo4j import bundle or DEXPI.
 
     python export.py work/my-plant/kg graphml          # -> graph.graphml (yEd, Gephi, NetworkX)
     python export.py work/my-plant/kg neo4j            # -> neo4j/nodes.csv, edges.csv, import.cypher
+    python export.py work/my-plant/kg dexpi            # -> graph.dexpi.xml, dexpi_export_report.md
+
+build_kg.py already writes the DEXPI files on every build. The dexpi format
+re-exports an existing graph.json with the same mapping and validation code.
 
 Node types become Neo4j labels and edge types become relationship types.
 Nested attributes are flattened to scalar properties where possible and kept
@@ -100,12 +104,18 @@ def export_neo4j(g: Graph, out: Path) -> None:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("kg", type=Path, help="kg/ directory or graph.json")
-    ap.add_argument("format", choices=["graphml", "neo4j"])
+    ap.add_argument("format", choices=["graphml", "neo4j", "dexpi"])
     a = ap.parse_args()
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
     json_path = a.kg / "graph.json" if a.kg.is_dir() else a.kg
     g = Graph.load(json_path)
+    if a.format == "dexpi":
+        from pidkg.dexpi import export_dexpi
+
+        result = export_dexpi(g.kg, json_path.parent)
+        print(result.summary_line())
+        return 0 if result.ok else 1
     if a.format == "graphml":
         target = json_path.with_name("graph.graphml")
         export_graphml(g, target)

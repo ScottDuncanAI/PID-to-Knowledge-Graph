@@ -58,6 +58,9 @@ def raster_pdf(tmp_path):
     for x in range(100, 1500, 50):
         d.line([(x, 100), (x, 1100)], fill="black", width=3)
     p = tmp_path / "scan.pdf"
+    # Pillow 12 loads plugins lazily by file extension, so the PDF writer can
+    # find the JPEG encoder missing. Load every plugin first.
+    Image.init()
     img.save(p, resolution=150)
     return p
 

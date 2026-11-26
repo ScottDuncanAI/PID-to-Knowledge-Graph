@@ -10,6 +10,12 @@ and writes to <work>/kg/:
     graph.duckdb   the same graph as DuckDB tables, views and traversal macros
     summary.md     compact LLM-ready summary of flow, instruments and loops
     qa_report.md   issues to fix or re-check, with the tiles to look at
+    graph.dexpi.xml            DEXPI 2.0.1 native XML, written only if it validates
+    dexpi_export_report.md     DEXPI validation result and what could not be represented
+
+Exit status is 1 when the graph has QA errors. A failed DEXPI export is
+reported on the last line and in dexpi_export_report.md but does not change
+the exit status, and the other outputs are written either way.
 
 Usage:
     python build_kg.py work/my-plant
@@ -26,6 +32,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from pidkg.build import BuildError, build_graph, load_extractions  # noqa: E402
+from pidkg.dexpi import export_dexpi  # noqa: E402
 from pidkg.models import KnowledgeGraph, PageExtraction  # noqa: E402
 from pidkg.qa import run_qa, write_report  # noqa: E402
 from pidkg.store import write_duckdb  # noqa: E402
@@ -96,6 +103,7 @@ def main() -> int:
     write_duckdb(kg, out / "graph.duckdb")
     (out / "summary.md").write_text(write_summary(kg), encoding="utf-8")
     write_report(kg, kg.issues, out / "qa_report.md", args.work)
+    dexpi = export_dexpi(kg, out)
 
     s = kg.stats
     print(f"{plant_name}: {s['nodes']} nodes, {s['edges']} edges -> {out}")
@@ -105,6 +113,9 @@ def main() -> int:
         print("  loops: " + ", ".join(f"{k} {v}" for k, v in s["loops_by_type"].items()))
     print(f"  issues: {sev.get('error', 0)} errors, {sev.get('warning', 0)} warnings, "
           f"{sev.get('info', 0)} info (see qa_report.md)")
+    print("  " + dexpi.summary_line())
+    # The DEXPI export is an add-on: its status is reported above, but only
+    # graph QA errors decide the exit status, as before DEXPI existed.
     return 1 if sev.get("error") else 0
 
 

@@ -100,10 +100,16 @@ A QA report then lists anything doubtful: a sensor with no location, an off-page
 | `qa_report.md` | Errors, warnings and notes, each pointing to the part of the drawing to re-check |
 | `graph.json` | The complete graph (schema: [`graph.schema.json`](skills/pid-to-kg/references/schema/graph.schema.json)) |
 | `graph.duckdb` | The same graph as a [DuckDB](https://duckdb.org) database file, for SQL queries, including recursive upstream and downstream searches |
+| `graph.dexpi.xml` | The plant in [DEXPI](https://dexpi.org) 2.0.1 native XML, the industry standard for exchanging P&ID data. It is checked against the official schema and the DEXPI model, and written only if it passes |
+| `dexpi_export_report.md` | The DEXPI validation result, and every item DEXPI could not represent or that had to be added to fit its model |
+
+All six files are produced by every conversion; there is nothing extra to ask for.
+
+**About the DEXPI file.** It carries equipment, piping connectivity, valves, instruments, signals and control loops. It has no drawing graphics, so CAD tools will not redraw it as a P&ID. DEXPI connects pipes to nozzles, and drawings rarely number nozzles, so the exporter adds nozzles (and tees where lines join) and lists each one in the report. Facts DEXPI has no place for, such as interlock meaning, cascade roles, drawing sheets and confidence scores, stay in `graph.json` and are listed in the report. If the file ever fails validation, no `graph.dexpi.xml` is left in the folder, so an outdated copy cannot be mistaken for the current build.
 
 For larger projects, the graph can also be exported to Neo4j or to GraphML (for yEd, Gephi or NetworkX). Ask Claude to do it.
 
-The node and edge types are described in [`references/ontology.md`](skills/pid-to-kg/references/ontology.md). Equipment and instruments also carry the closest [DEXPI](https://dexpi.org) class, the industry standard for exchanging P&ID data.
+The node and edge types are described in [`references/ontology.md`](skills/pid-to-kg/references/ontology.md). Equipment and instruments also carry the closest [DEXPI](https://dexpi.org) class in `dexpi_class`, unchanged from earlier versions.
 
 ## Repository layout
 
@@ -111,8 +117,10 @@ The node and edge types are described in [`references/ontology.md`](skills/pid-t
 skills/pid-to-kg/
   SKILL.md                    workflow Claude follows
   references/                 extraction procedure, ISA-5.1 guide, symbol guide, ontology, JSON schemas
+  references/dexpi/2.0.1/     official DEXPI schema and model files, used offline for validation
   scripts/                    probe, render, hints, build, query, export, eval, crop
   scripts/pidkg/              library: models, ISA parsing, builder, loops, QA, storage, summary
+  scripts/pidkg/dexpi/        DEXPI mapping, XML writer, validator and export report
 docs/                         README diagram
 tests/                        pytest suite with a synthetic two-sheet plant and synthetic PDFs
 ```
@@ -122,7 +130,7 @@ tests/                        pytest suite with a synthetic two-sheet plant and 
 - **Extraction quality depends on legibility.** Low-resolution scans lose small text. Unreadable items are recorded as such, never guessed.
 - **Loops come from ISA tag numbers and drawn signal lines.** Logic that lives only in control narratives or cause-and-effect charts is not on the P&ID and is not captured.
 - **Line direction is taken from arrows and equipment logic.** Edges whose direction had to be inferred are marked `flow_direction: inferred`.
-- **The DEXPI mapping is informative.** It is not a certified DEXPI export.
+- **The DEXPI file is validated, not certified.** It passes the official DEXPI 2.0.1 schema and model checks, but it has not been certified by the DEXPI Initiative or tested against every importing tool. Like the rest of the graph, it needs engineering review.
 
 ## Development
 
@@ -139,3 +147,5 @@ The graph is machine-extracted from drawings. It must be reviewed by a qualified
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+The DEXPI 2.0.1 schema and model files in `skills/pid-to-kg/references/dexpi/2.0.1/`, and the DEXPI reference P&ID in `tests/fixtures/dexpi/`, are © DEXPI Initiative. They are redistributed unchanged under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) and are not covered by the MIT license. Each folder's `SOURCE.md` gives the original location.
